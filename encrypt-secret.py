@@ -45,7 +45,7 @@ class GetHandler(BaseHTTPRequestHandler):
 
 
 def get_id_token(
-    client_id: str, client_secret: str, auth_code: str, addr: str, port: int
+    client_id: str, client_secret: str, aud: str, auth_code: str, addr: str, port: int
 ) -> str:
     url = "https://oauth2.googleapis.com/token"
     data = urllib.parse.urlencode(
@@ -55,6 +55,7 @@ def get_id_token(
             "code": auth_code,
             "redirect_uri": f"http://{addr}:{port}",
             "grant_type": "authorization_code",
+            "audience": aud,
         }
     ).encode()
     req = urllib.request.Request(url, data=data)
@@ -103,10 +104,12 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser.add_argument(
         "--client-secret", help="The OAuth client secret for IAP."
     )
+    parser.add_argument("--audience", help="The IAP client ID.")
     args = parser.parse_args(argv)
 
     client_id = args.client_id
     client_secret = args.client_secret
+    audience = args.audience
 
     httpd = HTTPServer(("localhost", 8000), GetHandler)
     [_, port] = httpd.server_address
@@ -122,6 +125,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     id_token = get_id_token(
         client_id,
         client_secret,
+        audience,
         GetHandler.last_request.code,
         "localhost",
         port,
